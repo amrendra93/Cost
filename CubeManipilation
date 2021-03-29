@@ -1,0 +1,119 @@
+library(dplyr)
+library(readxl)
+library(writexl)
+library(rlist)
+
+path = "/Users/amar/Documents/From PTAI/Woodside/"
+list_cube <- list.files(path=path, pattern = "BENCH_GAS", all.file = FALSE) # file names in the folder, all.file FALSE returns only visible files
+len <- length(list_cube)                                  # Total no of files in the folder
+
+## TRENDGROUP_NM used for filter later
+Trendgroup_unique = c("Australian Peer Group", "Gas All Participants", "Labor Rate Group - High", "Labor Rate Group - Low",
+                      "Labor Rate Group - Mid", "Mature Participants", "New Participants", "Technology - APC3MR",
+                      "Technology - APC3MR/SMR", "Technology - APCI", "Technology - COP")
+
+
+
+### Create vector for naming cubes
+cubeName = c()
+for (x in 1:len) {
+  cubeName[x] = substr(list_cube[x], start = 11, stop = 19)
+}
+
+## Create list to read all cubes
+readCube = list()
+for (x in 1:len) {
+  readCube[[x]] <- read_excel(paste0(path, list_cube[x]))   # reads from path location
+  names(readCube)[x] <- cubeName[x]                         # Give name to each cube in the list from 'cubeName'
+}
+
+
+numRowCubeAll <- sapply(readCube, nrow)    ## Total number of rows in each cube
+numColCubeAll <- lapply(readCube, ncol)   ## Total number of columns in each cube
+
+
+##names(readCube) <- cubeName
+
+## Update names of cube(df) from 'name' vector
+# use 'assign' function
+for (x in 1:len) {
+  assign(cubeName[x], read_excel(paste0(path, list_cube[x])) )
+}
+
+### Use list readCube, each cube DATE is changed to YEAR format
+for (x in 1:length(readCube)) {
+  ## FROMDATE and TODATE date formate is changed to YEAR
+  readCube[[x]] = readCube[[x]] %>% 
+    mutate(FROMDATE = lubridate::year(FROMDATE), TODATE = lubridate::year(TODATE) ) %>% 
+    filter(TRENDGROUP_NM %in% Trendgroup_unique) %>% 
+    filter(TRENDGROUP_NM == "Gas All Participants" & DATATYPE_NM %in% c("AVG", "SITE")| DATATYPE_NM == "AVG")
+}
+
+numRowCubeMod <- sapply(readCube, nrow)
+numColCubeMod <- lapply(readCube, ncol)
+
+#### Length of UNIT based cube
+## Group together UNIT based cubes and SITE based cubes
+unitBased = c("BENCH_GAS_MAINT_KPI_VW.XLSX", "BENCH_GAS_SHUTDOWN1_KPI_VW.XLSX", "BENCH_GAS_SHUTDOWN2_KPI_VW.XLSX",
+              "BENCH_GAS_SHUTDOWN3_KPI_VW.XLSX", "BENCH_GAS_SHUTDOWN4_KPI_VW.XLSX", "BENCH_GAS_SHUTDOWN5_KPI_VW.XLSX",
+              "BENCH_GAS_SHUTDOWN6_KPI_VW.XLSX", "BENCH_GAS_TRIPS_KPI_VW.XLSX", "BENCH_GAS_UTI_KPI_VW.XLSX")
+
+### Create/exctract vector for naming UNIT based cubes
+cubeNameUnitBased = c()
+for (x in 1:length(unitBased)) {
+  cubeNameUnitBased[x] = substr(unitBased[x], start = 11, stop = 19)
+}
+
+## Get index vector of UNIT cube from all cubes
+indexUnitCube <- match(cubeNameUnitBased, cubeName)
+indexUnitCube <- which(cubeName %in% cubeNameUnitBased)
+'%ni%' <- Negate('%in%')  ## 
+indexSiteCube <- which(cubeName %ni% cubeNameUnitBased)
+
+readCube[[3]]
+sample = readCube$COS_RT1_K %>% filter(TRENDGROUP_NM %in% Trendgroup_unique) %>% 
+  filter(TRENDGROUP_NM == "Gas All Participants" & DATATYPE_NM %in% c("AVG", "SITE")| DATATYPE_NM == "AVG")
+
+
+
+
+
+
+write_xlsx(list(iris = iris, cars = cars, mtcars = mtcars), "mydata.xlsx")
+
+list_data <- list(c(0.2, 0.1), c(21,32,11), c(10,11))
+print(list_data)
+length(list_data)
+grp <- sapply(list_data, nrow)
+grp = c(150)
+L1 <- split(list_data, grp)
+
+
+list_data = list(iris = iris, cars = cars, mtcars = mtcars)
+for (x in 1:length(list_data)) {
+  list_data[[x]] = list_data[[x]] %>% mutate()
+}
+
+
+L <- list(foo1 = data.frame(a = 1:13, value = rnorm(13)),
+          foo2 = data.frame(a = 1:5, value = rnorm(5)),
+          foo3 = data.frame(a = 1:13, value = rnorm(13)),
+          foo4 = data.frame(a = 1:5, value = rnorm(5)))
+
+grp <- sapply(L, nrow)
+L1 <- split(L, grp)
+L1 <- split(L, setNames(c("month", "quarter"), c("13", "5"))[as.character(grp)])
+          
+subset(list_data[[1]])
+A = tibble(N=c(2,4,6), S=c(4,8,12))
+A %>% mutate (N=N^2)
+
+unlist(list_data)
+
+
+
+setwd("/Users/amar/Documents/From PTAI/IndustryAnalysis")
+write_xlsx(readCube, "myworkbook.xlsx", format_headers = TRUE)
+
+
+
